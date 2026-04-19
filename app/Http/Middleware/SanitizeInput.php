@@ -17,7 +17,7 @@ class SanitizeInput
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -31,9 +31,6 @@ class SanitizeInput
 
     /**
      * Recursively sanitize the input data.
-     *
-     * @param  mixed  $data
-     * @return mixed
      */
     protected function sanitize(mixed $data): mixed
     {
@@ -44,10 +41,10 @@ class SanitizeInput
         if (is_string($data)) {
             // Remove null bytes
             $data = str_replace("\0", '', $data);
-            
+
             // Trim whitespace
             $data = trim($data);
-            
+
             // Optional: Strip HTML tags (disable for rich text content)
             if (env('STRIP_HTML_TAGS', false)) {
                 $data = strip_tags($data);

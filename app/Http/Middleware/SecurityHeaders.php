@@ -17,7 +17,7 @@ class SecurityHeaders
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -45,7 +45,7 @@ class SecurityHeaders
             $maxAge = env('SECURITY_HSTS_MAX_AGE', 31536000); // 1 year
             $includeSubDomains = env('SECURITY_HSTS_SUBDOMAINS', true) ? '; includeSubDomains' : '';
             $preload = env('SECURITY_HSTS_PRELOAD', false) ? '; preload' : '';
-            
+
             $response->headers->set('Strict-Transport-Security', "max-age={$maxAge}{$includeSubDomains}{$preload}");
         }
 
