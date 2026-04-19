@@ -1,0 +1,24 @@
+{
+    "preset": "laravel",
+    "php-version": 8.4,
+    "rules": {
+        "not_operator_with_successor_space": true,
+        "method_chaining_indentation": true,
+        "space_after_semicolon": true,
+        "trailing_comma_in_multiline": true,
+        "single_line_throw": true,
+        "concat_space": {
+            "spacing": "one"
+        },
+        "ordered_imports": {
+            "imports_order": ["class", "function", "const"]
+        }
+    },
+    "exclude": [
+        "bootstrap/cache",
+        "storage",
+        "vendor",
+        "node_modules",
+        "public"
+    ]
+}
