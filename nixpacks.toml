@@ -2,7 +2,7 @@
 # Docs: https://nixpacks.com/docs/configuration/file
 
 [phases.setup]
-nixPkgs = ['php83', 'php83Packages.composer', 'postgresql']
+nixPkgs = ['php84', 'php84Packages.composer', 'postgresql']
 
 [phases.install]
 cmds = [

@@ -49,7 +49,7 @@ See [SECURITY.md](SECURITY.md) for detailed security documentation.
 ## 🛠️ Local Development
 
 ### Prerequisites
-- PHP 8.3+
+- PHP 8.4+
 - PostgreSQL 15+
 - Composer
 - Node.js 20+

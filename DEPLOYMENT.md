@@ -28,7 +28,7 @@ Your app deploys using **Nixpacks**, not Docker:
 **How it works:**
 1. Push code to GitHub
 2. Railway detects Laravel automatically
-3. Nixpacks installs PHP 8.3 + dependencies
+3. Nixpacks installs PHP 8.4 + dependencies
 4. Your app is live!
 
 **Configuration files:**
@@ -474,7 +474,7 @@ Railway gives you $5/month free credit. Monitor usage:
 **Common Issues:**
 - Missing `APP_KEY` - Generate and add to variables
 - Database connection error - Check database variables (`${{Postgres.PGHOST}}` etc.)
-- PHP version - Railway uses PHP 8.3 by default
+- PHP version - Railway uses PHP 8.4 by default (configured in nixpacks.toml)
 
 ### 500 Internal Server Error
 
