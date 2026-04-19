@@ -19,14 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // CORS handling (must be before other middleware)
         $middleware->prepend(HandleCors::class);
 
-        // Input sanitization
-        $middleware->append(SanitizeInput::class);
-
-        // Global security headers
+        // Global security headers (safe for all routes)
         $middleware->append(SecurityHeaders::class);
 
-        // API rate limiting
+        // API-specific middleware
         $middleware->api(append: [
+            // Input sanitization (only for API routes, not Filament admin)
+            SanitizeInput::class,
+            // Rate limiting
             'throttle:' . env('API_RATE_LIMIT', '60') . ',' . env('API_RATE_LIMIT_DECAY', '1'),
         ]);
 
