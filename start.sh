@@ -19,18 +19,25 @@ php artisan migrate --force --no-interaction || {
     echo "⚠️  Migrations failed, but continuing..."
 }
 
-# Clear and optimize caches
-echo "🗑️  Clearing caches..."
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-
-# Optional: Cache for production (only if APP_ENV is production)
+# Optimize for production
 if [ "$APP_ENV" = "production" ]; then
     echo "⚡ Optimizing for production..."
+
+    # Clear old caches first
+    php artisan config:clear
+    php artisan route:clear
+
+    # Cache configuration and routes
     php artisan config:cache || echo "   Config cache skipped"
     php artisan route:cache || echo "   Route cache skipped"
-    php artisan view:cache || echo "   View cache skipped"
+
+    # Filament optimization (includes view caching)
+    echo "🎨 Optimizing Filament assets..."
+    php artisan filament:optimize || echo "   Filament optimize skipped"
+
+    echo "✅ Production optimization complete"
+else
+    echo "🔧 Development mode - skipping cache optimization"
 fi
 
 # Start the application

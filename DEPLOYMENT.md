@@ -77,11 +77,12 @@ Your app deploys using **Nixpacks**, not Docker:
 3. Add these environment variables:
 
 ```env
-# Application
+# Application (IMPORTANT: Set these correctly for Filament to work!)
 APP_NAME="Portfolio API"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-app.up.railway.app
+ASSET_URL=https://your-app.up.railway.app
 
 # Database (use Railway's references)
 DB_CONNECTION=pgsql
@@ -157,231 +158,86 @@ Check deployment logs in Railway dashboard to ensure everything worked.
 
 ---
 
-## 🔄 GitHub Actions - Automated Deployments
+## 🔄 Automatic Deployments via Railway
 
-Automatically deploy when you push to `main` branch.
+Railway automatically deploys your application when you push to the `main` branch through its **GitHub Integration**. No GitHub Actions or manual deployment needed!
 
-### Step 1: Get Railway Token
+### How It Works
 
-1. Go to **[Railway Account Settings](https://railway.app/account/tokens)**
-2. Click **"Create Token"**
-3. Give it a name (e.g., "GitHub Actions")
-4. Copy the token (starts with `railway_...`)
+1. **Push to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Update application"
+   git push origin main
+   ```
 
-### Step 2: Generate Application Key
+2. **Railway Detects Changes:**
+   - Railway monitors your repository
+   - Automatically triggers deployment on push to main
+   - No manual intervention required
 
-Generate a secure application key locally:
+3. **Deployment Process:**
+   - Nixpacks builds your application (PHP 8.4 + dependencies)
+   - Runs `start.sh` startup script
+   - Executes migrations
+   - Optimizes for production
+   - Health check at `/up` endpoint
+   - App goes live automatically
 
-```bash
-php artisan key:generate --show
+### Monitor Deployments
+
+**Railway Dashboard:**
+- Go to https://railway.app/dashboard
+- Click on your project
+- View **"Deployments"** tab for real-time logs
+- Check build progress, startup logs, and errors
+
+**What to Look For:**
+```
+✅ Build successful
+✅ Starting deployment...
+✅ Running migrations...
+✅ Health check passed
+✅ Deployment live
 ```
 
-Copy the output (e.g., `base64:abcd1234...`). You'll need this for GitHub secrets.
+### Deployment Logs Location
 
-### Step 3: Add GitHub Secrets (Senior-Level Security)
-
-1. Go to your GitHub repository
-2. Click **"Settings"** → **Secrets and variables** → **"Actions"**
-3. Click **"New repository secret"**
-
-> **🔒 Security Best Practice:** The workflow uses GitHub Secrets for deployment credentials. Zero hardcoded values = zero security risks.
-
-#### Required Secret (Deployment)
-
-| Secret Name | Description | How to Get |
-|------------|-------------|------------|
-| `RAILWAY_TOKEN` | Railway deployment token | Get from: https://railway.app/account/tokens |
-
-> **Note:** Only `RAILWAY_TOKEN` is required for deployment. Railway manages all application environment variables directly in their platform.
-
-#### Optional: Application Configuration (For CI/CD Testing)
-
-If you plan to add testing back to the workflow later, you can configure these secrets:
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `APP_NAME` | `Portfolio API` | Application name |
-| `APP_ENV` | `testing` | Environment (testing for CI) |
-| `APP_DEBUG` | `true` | Debug mode for tests |
-| `APP_URL` | `http://localhost` | Application URL for tests |
-| `APP_LOCALE` | `en` | Default locale |
-| `APP_FALLBACK_LOCALE` | `en` | Fallback locale |
-
-#### Test Database Configuration
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `TEST_DB_NAME` | `testing` | Test database name |
-| `TEST_DB_USER` | `test_user` | Test database username |
-| `TEST_DB_PASSWORD` | `test_password_secure_123` | Test database password |
-| `DB_CONNECTION` | `pgsql` | Database driver |
-| `DB_HOST` | `localhost` | Database host |
-| `DB_PORT` | `5432` | Database port |
-
-#### Security - CORS Configuration
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins |
-| `CORS_ALLOWED_METHODS` | `GET,POST,PUT,PATCH,DELETE,OPTIONS` | Allowed HTTP methods |
-| `CORS_ALLOWED_HEADERS` | `Content-Type,Authorization,X-Requested-With,Accept,Origin` | Allowed headers |
-| `CORS_EXPOSED_HEADERS` | `` | Headers to expose |
-| `CORS_MAX_AGE` | `3600` | Preflight cache duration |
-| `CORS_SUPPORTS_CREDENTIALS` | `false` | Allow credentials |
-
-#### Security - Rate Limiting
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `API_RATE_LIMIT` | `60` | Requests per decay period |
-| `API_RATE_LIMIT_DECAY` | `1` | Decay period (minutes) |
-
-#### Security - Headers & Policies
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `SECURITY_REFERRER_POLICY` | `strict-origin-when-cross-origin` | Referrer policy |
-| `SECURITY_PERMISSIONS_POLICY` | `geolocation=(), microphone=(), camera=()` | Permissions policy |
-| `SECURITY_CSP_ENABLED` | `false` | Enable Content Security Policy |
-| `SECURITY_CSP` | `default-src self` | CSP directives |
-| `SECURITY_HSTS_ENABLED` | `false` | Enable HSTS (HTTPS only) |
-| `SECURITY_HSTS_MAX_AGE` | `31536000` | HSTS max age |
-| `SANITIZE_INPUT` | `true` | Enable input sanitization |
-| `STRIP_HTML_TAGS` | `false` | Strip HTML from input |
-
-#### Security - Proxy & Host Trust
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `TRUST_PROXIES` | `false` | Trust proxy headers |
-| `TRUSTED_PROXIES` | `*` | Trusted proxy IPs |
-| `TRUST_HOSTS` | `false` | Trust host headers |
-| `TRUSTED_HOSTS_LIST` | `localhost` | Trusted hosts |
-
-#### Session & Cache
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `SESSION_DRIVER` | `array` | Session driver for tests |
-| `SESSION_LIFETIME` | `120` | Session lifetime (minutes) |
-| `CACHE_STORE` | `array` | Cache store for tests |
-| `QUEUE_CONNECTION` | `sync` | Queue connection for tests |
-
-#### Logging
-
-| Secret Name | Default | Description |
-|------------|---------|-------------|
-| `LOG_CHANNEL` | `stack` | Log channel |
-| `LOG_LEVEL` | `debug` | Log level |
-
----
-
-**How to Add Secrets:**
-
-```bash
-# Get Railway Token
-# Visit: https://railway.app/account/tokens
-# Copy: railway_abc123...
-
-# Add to GitHub
-# Repo → Settings → Secrets and variables → Actions → New repository secret
-```
-
-**Steps:**
-1. Click **"New repository secret"**
-2. Name: `RAILWAY_TOKEN`
-3. Value: Your Railway token (from above)
-4. Click **"Add secret"**
-5. Done! You're ready to deploy
-
-**Minimum Required Setup:**
-- Just add `RAILWAY_TOKEN` (Railway deployment token)
-- That's it! No other secrets needed for basic deployment
-- Customize only what you need for your specific use case
-
-**Production Setup:**
-- Add all CORS secrets with your frontend URLs
-- Enable security headers (`SECURITY_HSTS_ENABLED=true`)
-- Set appropriate rate limits
-- Configure CSP if needed
-
-### Step 4: Workflow is Ready!
-
-Your repository already has `.github/workflows/deploy-railway.yml` configured!
-
-**What the workflow does:**
-- ✅ Automatically deploys to Railway on every push to `main` branch
-- ✅ Uses Railway CLI for deployment
-- ✅ Zero credentials in repository or logs
-- ✅ Simple and fast deployment process
-
-Push to `main` to trigger deployment:
-
-```bash
-git add .
-git commit -m "Deploy to Railway"
-git push origin main
-```
-
-Watch the deployment in **Actions** tab on GitHub!
-
-> **Note:** The workflow only deploys. Run tests locally before pushing: `php artisan test`
+In Railway dashboard:
+1. Click your Laravel service
+2. Go to **"Deployments"** tab
+3. Click on latest deployment
+4. View build logs and startup logs
 
 ---
 
 ## 🔐 Security Best Practices
 
-### Why Build .env from Secrets?
+### Environment Variables in Railway
 
-Our GitHub Actions workflow builds the `.env` file from GitHub secrets instead of copying `.env.example`. Here's why this matters:
+All sensitive configuration is managed securely in Railway's dashboard:
 
 **✅ Benefits:**
 
-1. **No Credentials in Repository**
-   - `.env` never stored in Git history
-   - Safe even in public repositories
-   - No accidental credential commits
+1. **Encrypted Storage**
+   - Railway encrypts all environment variables at rest
+   - Not visible in repository or Git history
+   - Secure transmission to application
 
-2. **Encrypted Storage**
-   - GitHub encrypts all secrets at rest
-   - Only accessible during workflow runs
-   - Not visible in logs or pull requests
+2. **Easy Management**
+   - Update variables without code changes
+   - Instant propagation to application (after redeploy)
+   - No commits needed for configuration changes
 
-3. **Easy Rotation**
-   - Update secrets without changing code
-   - Revoke and regenerate tokens instantly
-   - No need to commit changes to rotate credentials
+3. **Environment Isolation**
+   - Separate production and staging environments
+   - Different credentials per environment
+   - Zero chance of credential leaks
 
-4. **Environment Isolation**
-   - Different secrets for different branches
-   - Production vs staging vs testing separation
-   - Per-environment configuration
-
-5. **Audit Trail**
-   - GitHub logs when secrets are accessed
-   - Track who added/modified secrets
-   - Security compliance ready
-
-**❌ Why NOT to Copy .env.example:**
-
-```bash
-# DON'T DO THIS (insecure)
-- name: Setup env
-  run: |
-    cp .env.example .env
-    echo "DB_PASSWORD=hardcoded123" >> .env  # ❌ Visible in logs!
-```
-
-**✅ Instead Do This (secure):**
-
-```bash
-# DO THIS (secure)
-- name: Create .env from secrets
-  env:
-    DB_PASS: ${{ secrets.DB_PASSWORD }}  # ✅ Encrypted, not in logs
-  run: |
-    echo "DB_PASSWORD=${DB_PASS}" > .env
-```
+4. **Reference Other Services**
+   - Use `${{Postgres.PGHOST}}` syntax
+   - Automatically injects database credentials
+   - Services auto-discover each other
 
 ### Secret Management Tips
 
@@ -395,22 +251,22 @@ Our GitHub Actions workflow builds the `.env` file from GitHub secrets instead o
    ```
 
 2. **Rotate Regularly**
-   - Rotate `RAILWAY_TOKEN` every 90 days
    - Regenerate `APP_KEY` when team members leave
    - Update database passwords periodically
+   - Rotate credentials every 90 days
 
 3. **Principle of Least Privilege**
-   - Only add secrets that are needed
+   - Only configure variables that are needed
    - Use read-only database users where possible
-   - Limit token scopes and permissions
+   - Limit service access
 
-4. **Never Log Secrets**
+4. **Never Commit Secrets**
    ```bash
-   # Bad - secrets visible in logs
-   echo "Password is: ${{ secrets.DB_PASSWORD }}"  ❌
+   # Bad - secrets in repository
+   .env file committed  ❌
 
-   # Good - use secrets without logging
-   DB_PASSWORD=${{ secrets.DB_PASSWORD }}  ✅
+   # Good - secrets in Railway dashboard
+   All secrets in Railway Variables  ✅
    ```
 
 ---
@@ -499,6 +355,38 @@ Run migrations manually:
 2. No trailing slashes in URLs
 3. Redeploy after changing CORS settings
 
+### Filament Admin Panel - No CSS/Styling
+
+If Filament admin panel loads but has no styling:
+
+**1. Check APP_ENV and APP_URL:**
+```env
+APP_ENV=production  # Must be "production" not "local"
+APP_URL=https://your-actual-railway-domain.up.railway.app  # Exact domain
+ASSET_URL=https://your-actual-railway-domain.up.railway.app  # Same as APP_URL
+```
+
+**2. Get your Railway domain:**
+- Railway → Service → Settings → Networking → Copy the domain
+- Update `APP_URL` with the exact domain (no trailing slash)
+- Redeploy after changing
+
+**3. Clear caches manually (if needed):**
+```bash
+# In Railway Terminal
+php artisan optimize:clear
+php artisan filament:optimize
+```
+
+**4. Check deployment logs:**
+Look for: `🎨 Optimizing Filament assets...` and `✅ Production optimization complete`
+
+**Common causes:**
+- ❌ `APP_ENV=local` instead of `production`
+- ❌ Wrong `APP_URL` (doesn't match Railway domain)
+- ❌ Missing `ASSET_URL`
+- ❌ View cache cleared after optimization
+
 ### Out of Credit
 
 Railway's free $5/month usually lasts the whole month for small apps.
@@ -565,58 +453,11 @@ Your Laravel API is now deployed to Railway with:
 
 ---
 
-## � Quick Reference - GitHub Secrets
-
-Copy this checklist when setting up GitHub secrets:
-
-### Required Secrets (Must Add)
-
-```bash
-# 1. RAILWAY_TOKEN
-# Get from: https://railway.app/account/tokens
-# Example value: railway_aBcD1234EfGh5678IjKl9012MnOp3456
-
-# 2. APP_KEY
-# Generate with: php artisan key:generate --show
-# Example value: base64:abcd1234efgh5678ijkl9012mnop3456qrst7890uvwx1234yz56
-```
-
-### Optional Secrets (Use Defaults if Not Set)
-
-```bash
-# Test Database Name (default: testing)
-TEST_DB_NAME=testing
-
-# Test Database User (default: test_user)
-TEST_DB_USER=test_user
-
-# Test Database Password (default: test_password_secure_123)
-TEST_DB_PASSWORD=your_secure_password_here
-```
-
-### How to Add Secrets - Step by Step
-
-1. Go to your GitHub repository
-2. Click: **Settings** → **Secrets and variables** → **Actions**
-3. Click: **New repository secret**
-4. Add each secret:
-   - Name: `RAILWAY_TOKEN` → Value: (your Railway token) → **Add secret**
-   - Name: `APP_KEY` → Value: (your Laravel key) → **Add secret**
-5. Done! Your workflow will use these secrets automatically
-
-### Verify Secrets Are Set
-
-In your repository:
-- Go to **Settings** → **Secrets and variables** → **Actions**
-- You should see: `RAILWAY_TOKEN`, `APP_KEY`
-- Optionally: `TEST_DB_NAME`, `TEST_DB_USER`, `TEST_DB_PASSWORD`
-
----
 
 ## �📖 Additional Resources
 
 - [Railway Documentation](https://docs.railway.app/)
-- [Railway CLI](https://docs.railway.app/develop/cli)
+- [Railway GitHub Integration](https://docs.railway.app/deploy/integrations)
 - [Laravel Deployment Best Practices](https://laravel.com/docs/deployment)
 - [Security Documentation](./SECURITY.md)
 

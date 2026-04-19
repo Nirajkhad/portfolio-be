@@ -8,8 +8,7 @@ A secure, production-ready Laravel API for managing portfolio content including 
 - ✅ **PostgreSQL Database** - Reliable data storage
 - ✅ **Filament Admin Panel** - Easy content management
 - ✅ **Comprehensive Security** - CORS, rate limiting, security headers
-- ✅ **Railway Deployment** - Free hosting with auto-deployments
-- ✅ **GitHub Actions** - Automated CI/CD pipeline
+- ✅ **Railway Deployment** - Free hosting with automatic deployments
 - ✅ **No Docker Required** - Nixpacks for simple deployments
 
 ## 📋 API Endpoints
@@ -109,12 +108,12 @@ This project uses Laravel Pint for code formatting:
 
 ### Railway (Recommended - FREE)
 
-Deploy to Railway with automated GitHub Actions:
+Deploy to Railway with automatic GitHub integration:
 
 1. **Sign up at [Railway.app](https://railway.app)** (no credit card required)
-2. **Add PostgreSQL database** to your project
-3. **Configure environment variables** in Railway dashboard
-4. **Add `RAILWAY_TOKEN` to GitHub Secrets**
+2. **Connect your GitHub repository** to Railway
+3. **Add PostgreSQL database** to your project
+4. **Configure environment variables** in Railway dashboard
 5. **Push to `main` branch** - automatic deployment!
 
 📚 **Full deployment guide:** [DEPLOYMENT.md](DEPLOYMENT.md)
@@ -122,9 +121,9 @@ Deploy to Railway with automated GitHub Actions:
 ### Quick Deploy
 
 ```bash
-# Add RAILWAY_TOKEN to GitHub Secrets
-# Then push to main:
+# Simply push to main branch:
 git push origin main
+# Railway automatically detects and deploys!
 ```
 
 ## 📖 Documentation
@@ -171,8 +170,8 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete configuration details.
 - **Database:** PostgreSQL 15
 - **Admin Panel:** Filament 4
 - **Deployment:** Railway (Nixpacks)
-- **CI/CD:** GitHub Actions
-- **PHP Version:** 8.3
+- **CI/CD:** Railway automatic deployments
+- **PHP Version:** 8.4
 
 ## 📁 Project Structure
 
