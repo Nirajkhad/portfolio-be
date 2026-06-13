@@ -1,5 +1,5 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 if [ "${APP_ENV}" = "production" ]; then
     echo "[entrypoint] Waiting for database connection..."

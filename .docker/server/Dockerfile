@@ -12,15 +12,16 @@ RUN composer install \
     --ignore-platform-req=ext-intl
 
 # Stage 2: Runtime
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm-bookworm
 
 # System dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     supervisor \
     curl \
-    postgresql-dev \
-    && rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/nginx/sites-enabled/default
 
 # PHP extensions
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
@@ -48,7 +49,7 @@ RUN php artisan storage:link --no-interaction \
     && chmod -R 775 storage bootstrap/cache
 
 # Config files
-COPY .docker/server/nginx.conf /etc/nginx/http.d/default.conf
+COPY .docker/server/nginx.conf /etc/nginx/conf.d/default.conf
 COPY .docker/server/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/server/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
