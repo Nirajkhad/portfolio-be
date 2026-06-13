@@ -32,8 +32,8 @@ RUN composer install -vvv --prefer-dist --no-interaction --optimize-autoloader \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY .docker/server/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .docker/server/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/server/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
