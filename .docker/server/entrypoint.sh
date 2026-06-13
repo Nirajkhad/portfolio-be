@@ -28,6 +28,15 @@ if [ "${APP_ENV}" = "production" ]; then
     php artisan view:cache
     php artisan filament:optimize 2>/dev/null || true
 
+    if [ -n "${ADMIN_EMAIL:-}" ] && [ -n "${ADMIN_PASSWORD:-}" ]; then
+        echo "[entrypoint] Creating admin user..."
+        php artisan make:filament-user \
+            --name="${ADMIN_NAME:-Admin}" \
+            --email="${ADMIN_EMAIL}" \
+            --password="${ADMIN_PASSWORD}" \
+            --no-interaction 2>/dev/null || echo "[entrypoint] Admin user already exists or creation skipped."
+    fi
+
     echo "[entrypoint] Application ready."
 fi
 
