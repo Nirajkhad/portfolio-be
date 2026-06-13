@@ -19,21 +19,21 @@ RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
     curl \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libicu-dev \
-    libonig-dev \
-    libxml2-dev \
+    unzip \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pdo_pgsql mbstring bcmath zip intl gd exif
-
-RUN pecl install redis && docker-php-ext-enable redis
+# PHP extensions (pre-compiled, ~10x faster than compiling from source)
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
+RUN install-php-extensions \
+    pdo_pgsql \
+    mbstring \
+    bcmath \
+    zip \
+    intl \
+    gd \
+    exif \
+    redis
 
 # Application source
 WORKDIR /var/www/html
@@ -42,7 +42,7 @@ COPY --from=vendor /app/vendor /var/www/html/vendor
 COPY . /var/www/html
 
 COPY --from=vendor /usr/bin/composer /usr/bin/composer
-RUN composer dump-autoload --optimize
+RUN composer dump-autoload --optimize && rm -f /usr/bin/composer
 
 # Storage link and permissions
 RUN php artisan storage:link --no-interaction \
