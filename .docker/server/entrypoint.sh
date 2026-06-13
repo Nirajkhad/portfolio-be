@@ -4,7 +4,7 @@ set -eu
 if [ "${APP_ENV}" = "production" ]; then
     if [ -z "${APP_KEY:-}" ]; then
         echo "[entrypoint] APP_KEY not set, generating..."
-        [ ! -f .env ] && touch .env
+        [ ! -f .env ] && echo 'APP_KEY=' > .env
         php artisan key:generate --force --no-interaction
         export APP_KEY=$(grep '^APP_KEY=' .env | cut -d= -f2)
     fi
