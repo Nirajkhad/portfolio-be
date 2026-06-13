@@ -14,7 +14,7 @@ else
 fi
 
 echo "🚀 Starting Docker containers..."
-docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up --build -d
+docker compose --env-file .env -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up --build -d
 
 echo "📦 Container status:"
 docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" ps

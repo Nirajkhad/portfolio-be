@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ExperienceController;
 use App\Http\Controllers\Api\GeneralInfoController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\PostLikeController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\SkillController;
 use Illuminate\Support\Facades\Route;
@@ -55,4 +56,8 @@ Route::prefix('posts')->group(function () {
 
     Route::get('/{slug}', [PostController::class, 'show'])
         ->name('posts.show');
+
+    Route::post('/{slug}/like', [PostLikeController::class, 'toggle'])
+        ->name('posts.like')
+        ->middleware('throttle:30,1');
 });
