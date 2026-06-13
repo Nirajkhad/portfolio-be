@@ -104,6 +104,35 @@ This project uses Laravel Pint for code formatting:
 ./vendor/bin/pint
 ```
 
+## 🐳 Local Development with Docker
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Setup
+
+```bash
+# Start containers (stops any existing run first, then starts fresh)
+./docker-start.sh
+```
+
+### Services
+
+- App + Nginx → `http://localhost:8080`
+- PostgreSQL → `localhost:5432`
+
+### Manual Control
+
+```bash
+# Stop containers
+docker compose -f .docker/local/compose.yml -p portfolio_be down
+
+# Start containers
+docker compose -f .docker/local/compose.yml -p portfolio_be up --build -d
+```
+
 ## 🚢 Deployment
 
 ### Railway (Recommended - FREE)

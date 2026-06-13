@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Create one general info record (portfolio owner info)
-        GeneralInfo::factory()->create();
+        // GeneralInfo::factory()->create();
 
         // Create experiences with associated achievement bullets
         Experience::factory(5)->create()->each(function (Experience $experience) {
