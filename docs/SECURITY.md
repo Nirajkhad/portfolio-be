@@ -1,18 +1,17 @@
-# Security Configuration Guide
+# Security Configuration
 
-This Laravel application implements comprehensive security measures including CORS, rate limiting, security headers, and other best practices.
+This document describes the security measures implemented in the Portfolio API. The application applies defense-in-depth through CORS, rate limiting, security headers, input sanitization, and proxy trust configuration.
 
-## Security Features Implemented
+## CORS (Cross-Origin Resource Sharing)
 
-### 1. Cross-Origin Resource Sharing (CORS)
+**File:** `config/cors.php`
 
-**Configuration File:** `config/cors.php`
+CORS is configured entirely through environment variables, making it adaptable across environments (local, staging, production).
 
-CORS is configured via environment variables for flexibility across environments.
-
-**Environment Variables:**
 ```env
+# Comma-separated list of allowed origins (no trailing slashes)
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
 CORS_ALLOWED_METHODS=GET,POST,PUT,PATCH,DELETE,OPTIONS
 CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With,Accept,Origin
 CORS_EXPOSED_HEADERS=
@@ -20,289 +19,108 @@ CORS_MAX_AGE=3600
 CORS_SUPPORTS_CREDENTIALS=false
 ```
 
-**Production Example:**
+**Production:**
 ```env
-CORS_ALLOWED_ORIGINS=https://yourfrontend.com,https://app.yourfrontend.com
-CORS_ALLOWED_METHODS=GET,POST,PUT,PATCH,DELETE,OPTIONS
-CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
-CORS_MAX_AGE=86400
-CORS_SUPPORTS_CREDENTIALS=true
+CORS_ALLOWED_ORIGINS=https://your-frontend.vercel.app
 ```
 
-### 2. API Rate Limiting
+Laravel's `HandleCors` middleware is registered globally (prepended) and applies to `api/*` paths.
 
-Rate limiting is applied to all API routes to prevent abuse and DoS attacks.
+## Rate Limiting
 
-**Configuration:**
+Applied to all `/api/v1/*` routes via the `throttle` middleware.
+
 ```env
-API_RATE_LIMIT=60          # Requests per decay period
-API_RATE_LIMIT_DECAY=1     # Decay period in minutes
+API_RATE_LIMIT=60        # requests per decay period
+API_RATE_LIMIT_DECAY=1   # decay period in minutes
 ```
 
-**Default:** 60 requests per minute per IP address
+**Behavior:**
+- Tracks requests by client IP
+- Returns `429 Too Many Requests` when exceeded
+- Includes `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `Retry-After` headers
 
-**Production Recommendations:**
-- Public APIs: 60-100 requests/minute
-- Authenticated APIs: 100-1000 requests/minute
-- Adjust based on your application's needs
+Rate limit configuration is read dynamically in `bootstrap/app.php` and passed to the API middleware group.
 
-### 3. Security Headers
+## Security Headers
 
 **Middleware:** `App\Http\Middleware\SecurityHeaders`
 
-The following security headers are automatically added to all responses:
+Applied globally to all responses. Each header is configurable via environment variables.
 
-#### X-Frame-Options
-```
-X-Frame-Options: DENY
-```
-Prevents clickjacking attacks by disallowing the page to be embedded in frames.
+| Header | Default Value | Config Key | Purpose |
+|--------|--------------|------------|---------|
+| `X-Frame-Options` | `DENY` | — | Prevents clickjacking |
+| `X-Content-Type-Options` | `nosniff` | — | Prevents MIME sniffing |
+| `X-XSS-Protection` | `1; mode=block` | — | Legacy XSS filter |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | `SECURITY_REFERRER_POLICY` | Controls referrer header |
+| `Permissions-Policy` | `geolocation=(), microphone=(), camera=()` | `SECURITY_PERMISSIONS_POLICY` | Restricts browser APIs |
+| `Content-Security-Policy` | (configurable) | `SECURITY_CSP`, `SECURITY_CSP_ENABLED` | Controls resource loading |
+| `Strict-Transport-Security` | (configurable) | `SECURITY_HSTS_ENABLED`, `SECURITY_HSTS_MAX_AGE`, `SECURITY_HSTS_SUBDOMAINS`, `SECURITY_HSTS_PRELOAD` | Forces HTTPS |
 
-#### X-Content-Type-Options
-```
-X-Content-Type-Options: nosniff
-```
-Prevents MIME type sniffing attacks.
+### CSP
 
-#### X-XSS-Protection
-```
-X-XSS-Protection: 1; mode=block
-```
-Enables browser XSS filtering (legacy browser support).
+Disabled by default. Enable in production:
 
-#### Referrer-Policy
-```env
-SECURITY_REFERRER_POLICY=strict-origin-when-cross-origin
-```
-Controls how much referrer information is sent with requests.
-
-Options: `no-referrer`, `no-referrer-when-downgrade`, `origin`, `origin-when-cross-origin`, `same-origin`, `strict-origin`, `strict-origin-when-cross-origin`
-
-#### Content Security Policy (CSP)
-```env
-SECURITY_CSP_ENABLED=false
-SECURITY_CSP=default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'
-```
-
-**Production Example:**
 ```env
 SECURITY_CSP_ENABLED=true
-SECURITY_CSP=default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://api.yourapp.com
+SECURITY_CSP=default-src 'self'; script-src 'self'; style-src 'self'
 ```
 
-#### HTTP Strict Transport Security (HSTS)
-```env
-SECURITY_HSTS_ENABLED=false      # Enable only when using HTTPS
-SECURITY_HSTS_MAX_AGE=31536000   # 1 year in seconds
-SECURITY_HSTS_SUBDOMAINS=true    # Apply to subdomains
-SECURITY_HSTS_PRELOAD=false      # Include in browser preload list
-```
+### HSTS
 
-**Production (HTTPS only):**
+Enable only when the app is served over HTTPS (Render handles this automatically):
+
 ```env
 SECURITY_HSTS_ENABLED=true
 SECURITY_HSTS_MAX_AGE=31536000
 SECURITY_HSTS_SUBDOMAINS=true
-SECURITY_HSTS_PRELOAD=true
 ```
 
-⚠️ **Warning:** Only enable HSTS when your application is fully running on HTTPS. Enabling it on HTTP will break your application.
+## Input Sanitization
 
-#### Permissions Policy
+**Middleware:** `App\Http\Middleware\SanitizeInput`
+
+Applied to all API routes. Performs:
+- Trims whitespace from all string inputs
+- Removes null bytes
+- Optionally strips HTML tags (disabled by default)
+
 ```env
-SECURITY_PERMISSIONS_POLICY=geolocation=(), microphone=(), camera=()
+SANITIZE_INPUT=true
+STRIP_HTML_TAGS=false
 ```
 
-Controls which browser features and APIs can be used.
+## Trusted Proxies
 
-### 4. Trusted Proxies & Hosts
-
-**For applications behind load balancers or reverse proxies:**
+Required when running behind Render's reverse proxy to generate correct URLs and respect forwarded headers:
 
 ```env
 TRUST_PROXIES=true
-TRUSTED_PROXIES=*  # Or comma-separated list of proxy IPs
+TRUSTED_PROXIES=*
 ```
 
-**To prevent host header attacks:**
+Laravel's `HandleInertiaRequests` middleware is used to trust proxies when `TRUST_PROXIES` is enabled.
 
-```env
-TRUST_HOSTS=true
-TRUSTED_HOSTS_LIST=yourdomain.com,www.yourdomain.com,api.yourdomain.com
-```
+## Laravel Built-in Protections
 
-## Additional Security Best Practices
+- **SQL Injection** — Eloquent ORM uses PDO parameter binding
+- **CSRF** — Tokens for web routes (stateless API routes are exempt)
+- **Password Hashing** — Bcrypt via `Hash` facade (12 rounds)
+- **Encryption** — AES-256-CBC via `Crypt` facade
+- **XSS** — Blade auto-escapes output (admin panel only; API returns JSON)
+- **Session** — `database` driver (not `file`)
+- **Cache/Queue** — `database` driver (not `file`)
 
-### 1. Laravel Built-in Security
+## Production Checklist
 
-Laravel provides these security features out of the box:
-
-- **SQL Injection Protection:** Eloquent ORM and Query Builder use PDO parameter binding
-- **CSRF Protection:** Automatic CSRF tokens for web routes (not needed for stateless APIs)
-- **Password Hashing:** Bcrypt/Argon2 hashing via `Hash` facade
-- **Encryption:** AES-256-CBC encryption via `Crypt` facade
-- **XSS Protection:** Blade template engine automatically escapes output
-
-### 2. Environment Configuration
-
-```env
-# Never set to true in production
-APP_DEBUG=false
-
-# Use strong bcrypt rounds (minimum 10, recommended 12+)
-BCRYPT_ROUNDS=12
-
-# Production logging
-LOG_CHANNEL=daily
-LOG_LEVEL=warning
-```
-
-### 3. HTTPS Enforcement
-
-For production, always use HTTPS. In your web server configuration:
-
-**Nginx:**
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name yourdomain.com;
-    
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-    
-    # Strong SSL configuration
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-}
-```
-
-### 4. Input Validation
-
-Always validate and sanitize user input using Laravel's validation:
-
-```php
-$request->validate([
-    'email' => 'required|email|max:255',
-    'name' => 'required|string|max:100|regex:/^[a-zA-Z\s]+$/',
-    'url' => 'required|url',
-]);
-```
-
-### 5. Database Security
-
-- Use parameterized queries (Eloquent does this automatically)
-- Limit database user permissions
-- Never expose database credentials in version control
-- Regularly backup your database
-- Use read replicas when possible
-
-### 6. API Authentication
-
-Consider implementing authentication for sensitive endpoints:
-
-```php
-// Install Laravel Sanctum
-composer require laravel/sanctum
-
-// Or use JWT
-composer require tymon/jwt-auth
-```
-
-### 7. File Upload Security
-
-If handling file uploads:
-
-```php
-$request->validate([
-    'file' => 'required|file|mimes:jpg,png,pdf|max:2048',
-]);
-
-// Store outside public directory
-$path = $request->file('file')->store('uploads', 'private');
-```
-
-### 8. Error Handling
-
-Never expose sensitive information in error messages:
-
-```env
-# Production
-APP_DEBUG=false
-LOG_LEVEL=error
-```
-
-## Production Deployment Checklist
-
-- [ ] Set `APP_ENV=production`
-- [ ] Set `APP_DEBUG=false`
-- [ ] Generate new `APP_KEY`
-- [ ] Configure proper CORS origins (no wildcards)
-- [ ] Enable HSTS if using HTTPS
-- [ ] Enable CSP headers
-- [ ] Set up rate limiting appropriate for your traffic
-- [ ] Configure trusted proxies if behind load balancer
-- [ ] Set up proper logging and monitoring
-- [ ] Enable SSL/TLS certificates
-- [ ] Configure firewall rules
-- [ ] Set up automated backups
-- [ ] Implement API authentication
-- [ ] Review and update trusted hosts
-- [ ] Set appropriate session and cache drivers
-- [ ] Configure proper file permissions (755 for directories, 644 for files)
-- [ ] Disable directory listing in web server
-- [ ] Keep dependencies updated
-
-## Security Headers Testing
-
-Test your security headers using:
-- [SecurityHeaders.com](https://securityheaders.com/)
-- [Mozilla Observatory](https://observatory.mozilla.org/)
-- Browser DevTools Network tab
-
-## Monitoring & Logging
-
-Monitor for:
-- Failed authentication attempts
-- Rate limit violations
-- Unusual traffic patterns
-- Error spikes
-- Slow queries
-
-Use Laravel's built-in logging or integrate with services like:
-- Sentry
-- Bugsnag
-- New Relic
-- Datadog
-
-## Updates & Maintenance
-
-1. Regularly update dependencies:
-   ```bash
-   composer update
-   npm update
-   ```
-
-2. Review security advisories:
-   ```bash
-   composer audit
-   npm audit
-   ```
-
-3. Monitor Laravel security releases: https://laravel.com/docs/releases
-
-## Support
-
-For security vulnerabilities, please email security@yourapp.com instead of using the issue tracker.
-
-## References
-
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Laravel Security Best Practices](https://laravel.com/docs/security)
-- [MDN Web Security](https://developer.mozilla.org/en-US/docs/Web/Security)
+- [ ] `APP_DEBUG=false`
+- [ ] `APP_ENV=production`
+- [ ] `APP_KEY` generated and set (never committed)
+- [ ] `CORS_ALLOWED_ORIGINS` restricted to specific origins (no `*`)
+- [ ] Rate limiting tuned for expected traffic
+- [ ] HSTS enabled (Render provides HTTPS)
+- [ ] CSP enabled with restrictive policy
+- [ ] `TRUST_PROXIES=true` (Render proxy)
+- [ ] `LOG_LEVEL=error`
+- [ ] Dependencies kept current (`composer audit`)

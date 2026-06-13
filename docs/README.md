@@ -1,96 +1,81 @@
 # Portfolio API
 
-A secure, production-ready Laravel API for managing portfolio content including projects, experiences, skills, and blog posts.
+A RESTful API backend for a personal portfolio site — serves projects, work experience, skills, blog posts, and contact info to a frontend SPA. Built with Laravel 13, PostgreSQL, and Filament admin.
 
-## 🚀 Features
+## Features
 
-- ✅ **RESTful API** - Clean API endpoints for portfolio management
-- ✅ **PostgreSQL Database** - Reliable data storage
-- ✅ **Filament Admin Panel** - Easy content management
-- ✅ **Comprehensive Security** - CORS, rate limiting, security headers
-- ✅ **Railway Deployment** - Free hosting with automatic deployments
-- ✅ **No Docker Required** - Nixpacks for simple deployments
+- **Public REST API** — 11 endpoints serving portfolio data
+- **Filament Admin Panel** — `/admin` for managing all content (posts, projects, experiences, skills, general info)
+- **Security** — CORS, rate limiting, security headers, input sanitization
+- **Docker Local Dev** — `docker compose` with PHP-FPM, Nginx, PostgreSQL
+- **Render Deployment** — Docker-based single-container deploy with Nginx + PHP-FPM via Supervisor
 
-## 📋 API Endpoints
+## API Endpoints
 
-### General Information
-- `GET /api/v1/portfolio` - Get portfolio owner information
-- `GET /api/v1/general-infos` - Get all general information
+All endpoints are public (no auth), prefixed with `/api/v1`, and rate-limited (default: 60 req/min).
 
-### Experiences
-- `GET /api/v1/experiences` - List all work experiences
-- `GET /api/v1/experiences/{id}` - Get specific experience
+| Resource | Endpoint | Description |
+|----------|----------|-------------|
+| Portfolio | `GET /api/v1/portfolio` | Active portfolio info with social links |
+| General | `GET /api/v1/general-infos` | All general info records |
+| Experiences | `GET /api/v1/experiences` | All experiences with achievement bullets |
+| Experiences | `GET /api/v1/experiences/{id}` | Single experience by UUID |
+| Projects | `GET /api/v1/projects` | All projects with tech stacks |
+| Projects | `GET /api/v1/projects/featured` | Featured projects only |
+| Skills | `GET /api/v1/skills` | All skills |
+| Skills | `GET /api/v1/skills/grouped` | Skills grouped by category |
+| Posts | `GET /api/v1/posts` | All posts |
+| Posts | `GET /api/v1/posts/published` | Published posts only |
+| Posts | `GET /api/v1/posts/{slug}` | Single post by slug |
 
-### Projects
-- `GET /api/v1/projects` - List all projects
-- `GET /api/v1/projects/featured` - Get featured projects
-
-### Skills
-- `GET /api/v1/skills` - List all skills
-- `GET /api/v1/skills/grouped` - Get skills grouped by category
-
-### Posts
-- `GET /api/v1/posts` - List all posts
-- `GET /api/v1/posts/published` - List published posts only
-- `GET /api/v1/posts/{slug}` - Get specific post by slug
-
-## 🔒 Security Features
-
-- **CORS Protection** - Configurable allowed origins
-- **Rate Limiting** - Prevent API abuse (100 requests/minute default)
-- **Security Headers** - HSTS, CSP, X-Frame-Options, etc.
-- **Input Sanitization** - Automatic input cleaning
-- **Proxy Trust** - Support for load balancers
-- **Environment Secrets** - GitHub Secrets integration
-
-See [SECURITY.md](SECURITY.md) for detailed security documentation.
-
-## 🛠️ Local Development
-
-### Prerequisites
-- PHP 8.4+
-- PostgreSQL 15+
-- Composer
-- Node.js 20+
-
-### Setup
-
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd portfolio-be
-
-# Install dependencies
-composer install
-npm install
-
-# Copy environment file
-cp .env.example .env
-
-# Generate application key
-php artisan key:generate
-
-# Configure your database in .env
-# DB_CONNECTION=pgsql
-# DB_HOST=localhost
-# DB_PORT=5432
-# DB_DATABASE=portfolio
-# DB_USERNAME=your_username
-# DB_PASSWORD=your_password
-
-# Run migrations
-php artisan migrate
-
-# (Optional) Seed database
-php artisan db:seed
-
-# Start development server
-php artisan serve
+All responses follow a consistent envelope:
+```json
+{
+  "success": true,
+  "data": { ... }
+}
 ```
 
-Your API will be available at `http://localhost:8000`
+## Tech Stack
 
-### Running Tests
+| Layer | Technology |
+|-------|-----------|
+| Framework | Laravel 13 |
+| Language | PHP 8.4 |
+| Database | PostgreSQL |
+| Admin Panel | Filament 4 |
+| Local Dev | Docker Compose (PHP-FPM + Nginx + PostgreSQL) |
+| Production | Docker (single container: Nginx + PHP-FPM + Supervisor) |
+| Hosting | Render |
+| Code Style | Laravel Pint |
+
+## Local Development
+
+### Prerequisites
+
+- PHP 8.4+, Composer, PostgreSQL — or — Docker + Docker Compose
+
+### Manual Setup
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+# configure DB in .env, then:
+php artisan migrate
+php artisan db:seed       # optional
+php artisan serve         # http://localhost:8000
+```
+
+### Docker Setup
+
+```bash
+./docker-start.sh
+# App + Nginx at http://localhost:8080
+# PostgreSQL at localhost:5432
+```
+
+### Tests
 
 ```bash
 php artisan test
@@ -98,144 +83,57 @@ php artisan test
 
 ### Code Style
 
-This project uses Laravel Pint for code formatting:
-
 ```bash
-./vendor/bin/pint
+composer lint     # check
+composer lint:fix # auto-fix
 ```
 
-## 🐳 Local Development with Docker
-
-### Prerequisites
-
-- Docker
-- Docker Compose
-
-### Setup
-
-```bash
-# Start containers (stops any existing run first, then starts fresh)
-./docker-start.sh
-```
-
-### Services
-
-- App + Nginx → `http://localhost:8080`
-- PostgreSQL → `localhost:5432`
-
-### Manual Control
-
-```bash
-# Stop containers
-docker compose -f .docker/local/compose.yml -p portfolio_be down
-
-# Start containers
-docker compose -f .docker/local/compose.yml -p portfolio_be up --build -d
-```
-
-## 🚢 Deployment
-
-### Railway (Recommended - FREE)
-
-Deploy to Railway with automatic GitHub integration:
-
-1. **Sign up at [Railway.app](https://railway.app)** (no credit card required)
-2. **Connect your GitHub repository** to Railway
-3. **Add PostgreSQL database** to your project
-4. **Configure environment variables** in Railway dashboard
-5. **Push to `main` branch** - automatic deployment!
-
-📚 **Full deployment guide:** [DEPLOYMENT.md](DEPLOYMENT.md)
-
-### Quick Deploy
-
-```bash
-# Simply push to main branch:
-git push origin main
-# Railway automatically detects and deploys!
-```
-
-## 📖 Documentation
-
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Complete Railway deployment guide
-- **[SECURITY.md](SECURITY.md)** - Security features and best practices
-- **[SECURITY_SETUP.md](SECURITY_SETUP.md)** - Quick security configuration
-- **[GITHUB_SECRETS.md](GITHUB_SECRETS.md)** - GitHub Secrets reference
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Key configuration in `.env`:
-
-```env
-# Application
-APP_NAME="Portfolio API"
-APP_ENV=production
-APP_KEY=base64:your-key-here
-APP_DEBUG=false
-APP_URL=https://your-app.up.railway.app
-
-# Database (Auto-configured by Railway)
-DB_CONNECTION=pgsql
-DB_HOST=${{Postgres.PGHOST}}
-DB_PORT=${{Postgres.PGPORT}}
-DB_DATABASE=${{Postgres.PGDATABASE}}
-DB_USERNAME=${{Postgres.PGUSER}}
-DB_PASSWORD=${{Postgres.PGPASSWORD}}
-
-# Security
-CORS_ALLOWED_ORIGINS=https://yourfrontend.com
-API_RATE_LIMIT=100
-SECURITY_HSTS_ENABLED=true
-TRUST_PROXIES=true
-```
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete configuration details.
-
-## 🏗️ Tech Stack
-
-- **Framework:** Laravel 13
-- **Database:** PostgreSQL 15
-- **Admin Panel:** Filament 4
-- **Deployment:** Railway (Nixpacks)
-- **CI/CD:** Railway automatic deployments
-- **PHP Version:** 8.4
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 app/
-├── Actions/          # Single-purpose action classes
-├── Http/
-│   ├── Controllers/  # API controllers
-│   └── Middleware/   # Custom middleware (Security, CORS)
-├── Models/          # Eloquent models
-└── Services/        # Business logic layer
-
-config/
-├── cors.php         # CORS configuration
-└── ...
-
+  Actions/            # Single-purpose query classes (GetAllPostsAction, etc.)
+  Filament/Resources/ # Admin panel CRUD resources (5 resources)
+  Http/
+    Controllers/Api/  # API controllers (5 controllers)
+    Middleware/        # SecurityHeaders, SanitizeInput
+  Models/             # Eloquent models (8 models)
+  Services/           # Business logic layer (5 services)
+config/               # Application configuration
+database/
+  migrations/         # 11 migration files
+  seeders/            # Database seeders
+  factories/          # Model factories
+docs/                 # Documentation
 routes/
-└── api.php          # API routes
-
-.github/
-└── workflows/
-    └── deploy-railway.yml  # Deployment workflow
+  api.php             # API route definitions
+tests/                # PHPUnit tests
+.docker/
+  local/              # Docker Compose for local dev
+  server/             # Single-container Dockerfile for Render
 ```
 
-## 🤝 Contributing
+## Architecture
 
-This is a personal portfolio API. If you find issues or have suggestions, feel free to open an issue.
+Controllers handle HTTP, delegate to Services, which call Actions for single database queries. Models use UUIDs (`HasUuids` trait) and follow `HasFactory` for testing.
 
-## 📄 License
+## Security
 
-This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **CORS** — Configurable allowed origins via env vars
+- **Rate Limiting** — 60 req/min per IP (configurable)
+- **Security Headers** — X-Frame-Options, HSTS, CSP, Referrer-Policy, Permissions-Policy
+- **Input Sanitization** — Trims whitespace, removes null bytes, optional HTML stripping
+- **Trusted Proxies** — Configurable for load balancers
 
-## 🙏 Acknowledgments
+See `docs/SECURITY.md` for details.
 
-- Built with [Laravel](https://laravel.com)
-- Admin panel powered by [Filament](https://filamentphp.com)
-- Deployed on [Railway](https://railway.app)
+## Deployment
 
+Deploy to Render using the Docker setup in `.docker/server/`:
+
+1. Push to `main` branch
+2. Render auto-detects `render.yaml` and builds the Docker image
+3. Container starts Nginx + PHP-FPM via Supervisor on port 8080
+4. Entrypoint runs migrations and production caching
+
+See `docs/DEPLOYMENT.md` for the full guide.
