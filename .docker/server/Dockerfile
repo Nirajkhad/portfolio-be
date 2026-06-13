@@ -8,7 +8,8 @@ RUN composer install \
     --no-scripts \
     --no-autoloader \
     --prefer-dist \
-    --optimize-autoloader
+    --optimize-autoloader \
+    --ignore-platform-req=ext-intl
 
 # Stage 2: Runtime
 FROM php:8.4-fpm
