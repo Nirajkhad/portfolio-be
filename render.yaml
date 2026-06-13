@@ -3,7 +3,7 @@ services:
     name: portfolio-api
     runtime: docker
     plan: free
-    region: frankfurt
+    region: singapore
     branch: main
     dockerfilePath: .docker/server/Dockerfile
     dockerContext: .
