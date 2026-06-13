@@ -2,6 +2,11 @@
 set -eu
 
 if [ "${APP_ENV}" = "production" ]; then
+    if [ -z "${APP_KEY:-}" ]; then
+        echo "[entrypoint] APP_KEY not set, generating..."
+        php artisan key:generate --force --no-interaction
+    fi
+
     echo "[entrypoint] Waiting for database connection..."
     for i in $(seq 1 30); do
         if php artisan db:show 2>/dev/null; then
