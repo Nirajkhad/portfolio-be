@@ -29,12 +29,22 @@ if [ "${APP_ENV}" = "production" ]; then
     php artisan filament:optimize 2>/dev/null || true
 
     if [ -n "${ADMIN_EMAIL:-}" ] && [ -n "${ADMIN_PASSWORD:-}" ]; then
-        echo "[entrypoint] Creating admin user..."
-        php artisan make:filament-user \
-            --name="${ADMIN_NAME:-Admin}" \
-            --email="${ADMIN_EMAIL}" \
-            --password="${ADMIN_PASSWORD}" \
-            --no-interaction 2>/dev/null || echo "[entrypoint] Admin user already exists or creation skipped."
+        echo "[entrypoint] Creating/updating admin user..."
+        php artisan tinker --execute="
+            \$user = App\Models\User::where('email', getenv('ADMIN_EMAIL'))->first();
+            if (\$user) {
+                \$user->password = bcrypt(getenv('ADMIN_PASSWORD'));
+                \$user->save();
+                echo 'Admin password updated.';
+            } else {
+                App\Models\User::create([
+                    'name' => getenv('ADMIN_NAME') ?: 'Admin',
+                    'email' => getenv('ADMIN_EMAIL'),
+                    'password' => bcrypt(getenv('ADMIN_PASSWORD')),
+                ]);
+                echo 'Admin user created.';
+            }
+        " 2>/dev/null || echo "[entrypoint] Admin user operation skipped."
     fi
 
     echo "[entrypoint] Application ready."
