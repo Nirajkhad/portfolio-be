@@ -1,12 +1,23 @@
+# Stage 1: Vendor dependencies
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock /app/
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist \
+    --optimize-autoloader
+
+# Stage 2: Runtime
 FROM php:8.4-fpm
 
+# System dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
-    git \
     curl \
-    unzip \
-    zip \
     libzip-dev \
     libpng-dev \
     libjpeg-dev \
@@ -17,27 +28,36 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql pdo_pgsql mbstring bcmath zip intl gd exif
+    && docker-php-ext-install -j$(nproc) pdo_pgsql mbstring bcmath zip intl gd exif
 
 RUN pecl install redis && docker-php-ext-enable redis
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
+# Application source
 WORKDIR /var/www/html
-COPY . .
 
-RUN composer install -vvv --prefer-dist --no-interaction --optimize-autoloader \
-    && php artisan storage:link \
+COPY --from=vendor /app/vendor /var/www/html/vendor
+COPY . /var/www/html
+
+COPY --from=vendor /usr/bin/composer /usr/bin/composer
+RUN composer dump-autoload --optimize
+
+# Storage link and permissions
+RUN php artisan storage:link --no-interaction \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# Config files
 COPY .docker/server/nginx.conf /etc/nginx/conf.d/default.conf
 COPY .docker/server/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/server/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:8080/up || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
