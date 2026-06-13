@@ -12,18 +12,17 @@ RUN composer install \
     --ignore-platform-req=ext-intl
 
 # Stage 2: Runtime
-FROM php:8.4-fpm
+FROM php:8.4-fpm-alpine
 
 # System dependencies
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
-    unzip \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    postgresql-dev \
+    && rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 
-# PHP extensions (pre-compiled, ~10x faster than compiling from source)
+# PHP extensions
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
 RUN install-php-extensions \
     pdo_pgsql \
@@ -32,8 +31,7 @@ RUN install-php-extensions \
     zip \
     intl \
     gd \
-    exif \
-    redis
+    exif
 
 # Application source
 WORKDIR /var/www/html
@@ -50,7 +48,7 @@ RUN php artisan storage:link --no-interaction \
     && chmod -R 775 storage bootstrap/cache
 
 # Config files
-COPY .docker/server/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .docker/server/nginx.conf /etc/nginx/http.d/default.conf
 COPY .docker/server/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/server/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

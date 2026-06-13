@@ -37,10 +37,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     gd \
     exif
 
-# Install Redis extension
-RUN pecl install redis \
-    && docker-php-ext-enable redis
-
 # Install Composer globally
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
